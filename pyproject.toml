@@ -1,0 +1,26 @@
+[project]
+name = "phy607-project3"
+version = "1.0"
+dependencies = [
+    "numpy",
+    "scipy",
+    "matplotlib",
+]
+authors = [
+    {name = "Zae Moore", email = "emoore06@syr.edu"},
+    {name = "", email = "@syr.edu"},
+]
+description = "A Markov Chain Monte Carlo simulation package that "
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.scripts]
+run-chain = "src.main"
+
+[project.urls]
+"Homepage" = "https://github.com/ZaeMoore/phy607-project3"
