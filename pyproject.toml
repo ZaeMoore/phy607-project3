@@ -1,5 +1,5 @@
 [project]
-name = "phy607-project3"
+name = "project"
 version = "1.0"
 dependencies = [
     "numpy",
@@ -20,7 +20,7 @@ classifiers = [
 ]
 
 [project.scripts]
-run-chain = "src.main"
+run-chain = "project.main"
 
 [project.urls]
 "Homepage" = "https://github.com/ZaeMoore/phy607-project3"
