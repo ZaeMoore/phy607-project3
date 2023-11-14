@@ -13,17 +13,18 @@ import tqdm
 def model(x):
     return 1
 
-def post(x):
-    return likelihood(x) * prior(x)
+def logpost(x):
+    return loglikelihood(x) * logprior(x)
 
-def prior(x):
-    return 1
-
-def proposal(x):
-    return np.random.normal() + x
-
-def likelihood(m):
+def loglikelihood(m):
     return 1 
     #Just a Gaussian normal for the noise
+
+def logprior(x):
+    return 1
+
+def proposal(x): #This is not log
+    return np.random.normal() + x
+
 
 #Params: 
