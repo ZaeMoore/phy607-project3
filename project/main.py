@@ -15,14 +15,12 @@ def data(N):
     #Return an NxN array of spins
 
 def new_array(s):
-
     return 1
     #Given the old array, pick a random spin entry to flip and return the new array
 
-def dH(s):
-    return new_array(s)
-    #Find new array s', calculate the difference between H(s) and H(s')
-    #This will be used to determine if the spin flips
+def energy(s):
+    return 1
+    #Find the energy of the given array
 
 def model(x):
     return 1
@@ -30,9 +28,9 @@ def model(x):
 def logpost(x):
     return loglikelihood(x) + logprior(x)
 
-def loglikelihood(m):
-    return 1 
-    #exp(-BE)
+def loglikelihood(s):
+    b = 1
+    return -b * (energy(new_array(s)) - energy(s))
 
 def logprior(x):
     return 1
@@ -40,5 +38,7 @@ def logprior(x):
 def proposal(x): #This is not log
     return np.random.normal() + x
 
-
-#Params: 
+def mcmc(initial, model, prop, post, iterations):
+    t = [] #temp array?
+    e = [] #energy array?
+    return 1
