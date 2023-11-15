@@ -15,6 +15,7 @@ def data(N):
     #Return an NxN array of spins
 
 def new_array(s):
+
     return 1
     #Given the old array, pick a random spin entry to flip and return the new array
 
@@ -27,11 +28,11 @@ def model(x):
     return 1
 
 def logpost(x):
-    return loglikelihood(x) * logprior(x)
+    return loglikelihood(x) + logprior(x)
 
 def loglikelihood(m):
     return 1 
-    #Just a Gaussian normal for the noise
+    #exp(-BE)
 
 def logprior(x):
     return 1
