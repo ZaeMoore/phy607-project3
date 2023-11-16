@@ -51,7 +51,7 @@ def new_array(s, N):
     return s
     #Given the old array, pick a random spin entry to flip and return the new array
 
-def energy(s):
+def energy(s, J, N):
     """Calculate the energy of a state of spins
 
     Parameters
@@ -64,6 +64,12 @@ def energy(s):
     energy : int
         Energy of the state
     """
+    
+    atomEnergy = [] #Energy for each atom is that atom's spin state times the spin state of its neighbors
+    for i in s:
+        for j in i:
+            atomEnergy.append(s[i,j] * (s[i,j+1] + s[i,j-1] + s[i+1,j] + s[i-1,j]))
+
     return 1
     #Find the energy of the given array
 
