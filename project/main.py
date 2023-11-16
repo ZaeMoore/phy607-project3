@@ -41,18 +41,11 @@ def delta_energy(lattice, i, j, J):
     -------
     int
         Change in energy for flipping a randomly chosen spin state
-
     """
     N = lattice.shape[0]
     spin = lattice[i, j]
     neighbors = lattice[(i-1)%N, j] + lattice[(i+1)%N, j] + lattice[i, (j-1)%N] + lattice[i, (j+1)%N]
     return 2 * J * spin * neighbors
-
-def logprior(x):
-    return 1
-
-def proposal(x): #This is not log
-    return np.random.normal() + x
 
 def mcmc(lattice, beta, J, iterations):
     N = lattice.shape[0]
@@ -70,11 +63,36 @@ def mcmc(lattice, beta, J, iterations):
     return lattice
 
 def calculate_magnetization(lattice):
-    """Calculate the magnetization of the lattice."""
+    """Calculate the magnetization of the lattice.
+    
+    Parameters
+    ----------
+    lattice : 2D array of ints
+        Lattice of spin states
+
+    Returns
+    -------
+    int
+        Magnetization of the spin lattice
+    """
     return np.sum(lattice)
 
 def calculate_energy(lattice, J):
-    """Calculate the total energy of the lattice."""
+    """Calculate the total energy of the lattice.
+    
+        
+    Parameters
+    ----------
+    lattice : 2D array of ints
+        Lattice of spin states
+    J : int
+        Strength of interaction between neighbors
+
+    Returns
+    -------
+    int
+        Total energy of the spin lattice
+    """
     N = lattice.shape[0]
     energy = 0
     for i in range(N):
