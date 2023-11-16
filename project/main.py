@@ -59,9 +59,8 @@ def mcmc(lattice, beta, J, iterations):
         if dE < 0 or np.random.rand() < np.exp(-beta * dE):
             lattice[i, j] *= -1
 
-        if step % 100 == 0:
-            magnetization.append(calculate_magnetization(lattice))
-            energy.append(calculate_energy(lattice, J))
+        magnetization.append(calculate_magnetization(lattice))
+        energy.append(calculate_energy(lattice, J))
     return lattice, magnetization, energy
 
 def calculate_magnetization(lattice):
@@ -105,7 +104,7 @@ def calculate_energy(lattice, J):
     return energy / 2  # Each pair counted twice
 
 N = 100
-num_steps = 10000
+num_steps = 1000
 lattice = data(N)
 beta = 0.4
 J = 1
