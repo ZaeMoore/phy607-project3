@@ -50,6 +50,8 @@ def delta_energy(lattice, i, j, J):
 
 def mcmc(lattice, beta, J, iterations):
     N = lattice.shape[0]
+    magnetization = []
+    energy = []
 
     for step in tqdm.tqdm(range(iterations)):
         i, j = np.random.randint(0, N, size=2)
@@ -57,11 +59,10 @@ def mcmc(lattice, beta, J, iterations):
         if dE < 0 or np.random.rand() < np.exp(-beta * dE):
             lattice[i, j] *= -1
 
-        if step % 1000 == 0:
-            magnetization = calculate_magnetization(lattice)
-            energy = calculate_energy(lattice, J)
-            print(f"Step: {step}, Magnetization: {magnetization}, Energy: {energy}")
-    return lattice
+        if step % 100 == 0:
+            magnetization.append(calculate_magnetization(lattice))
+            energy.append(calculate_energy(lattice, J))
+    return lattice, magnetization, energy
 
 def calculate_magnetization(lattice):
     """Calculate the magnetization of the lattice.
@@ -110,16 +111,25 @@ beta = 0.4
 J = 1
 order = 8 #Might change this later
 
-mcmc(lattice, beta, J, num_steps)
+finallattice, magnetization, energy = mcmc(lattice, beta, J, num_steps)
 
 #Now do the emcee method here and compare
 #Reference data_post.py from class
 #Create the emcee sampler
 sampler = emcee.EnsembleSampler(500, order, delta_energy)
 
+plt.figure()
 plt.rcParams["figure.figsize"] = [7.00, 3.50]
 plt.rcParams["figure.autolayout"] = True
 plt.title("Final Spin Lattice")
-im = plt.imshow(lattice, cmap="magma")
+im = plt.imshow(finallattice, cmap="magma")
 plt.colorbar(im)
 plt.show()
+
+plt.figure()
+plt.plot(magnetization)
+plt.title("Magnetization")
+
+plt.figure()
+plt.plot(energy)
+plt.title("Energy")
