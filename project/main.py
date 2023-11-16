@@ -11,11 +11,20 @@ import tqdm
 #Import data
 
 def data(N):
-    return 1
-    #Return an NxN array of spins
+    latticeSpins = np.zeros(shape=(N, N))
 
-def new_array(s):
-    return 1
+    for i in latticeSpins:
+        for j in i:
+            latticeSpins[i,j] = np.random.choice([-1, 1])
+
+    return latticeSpins
+
+def new_array(s, N):
+    #s is the spins array
+    randomRow = np.random.choice(range(0, N-1))
+    randomColumn = np.random.choice(range(0, N-1))
+    s[randomRow, randomColumn] *= -1
+    return s
     #Given the old array, pick a random spin entry to flip and return the new array
 
 def energy(s):
@@ -28,8 +37,8 @@ def model(x):
 def logpost(x):
     return loglikelihood(x) + logprior(x)
 
-def loglikelihood(s):
-    b = 1
+def loglikelihood(s, b):
+    #b is the Beta value
     return -b * (energy(new_array(s)) - energy(s))
 
 def logprior(x):
