@@ -21,68 +21,32 @@ def data(N):
     latticeSpins : 2D array of ints
         Lattice of spin states
     """
-    latticeSpins = np.zeros(shape=(N, N))
+    return np.random.choice([-1, 1], size=(N, N))
 
-    for i in latticeSpins:
-        for j in i:
-            latticeSpins[i,j] = np.random.choice([-1, 1])
-
-    return latticeSpins
-
-def new_array(s, N):
-    """Generate potential new spin lattice to test
-
-    Parameters
-    ----------
-    s : 2D array of ints
-        Current data to be modified
-    N : int
-        Size of the spin lattice will be NxN
-
-    Returns
-    -------
-    s : 2D array of ints
-        New spin lattice to test
-    """
-    #s is the spins array
-    randomRow = np.random.choice(range(0, N-1))
-    randomColumn = np.random.choice(range(0, N-1))
-    s[randomRow, randomColumn] *= -1
-    return s
-    #Given the old array, pick a random spin entry to flip and return the new array
-
-def energy(s, J, N):
-    """Calculate the energy of a state of spins
-
-    Parameters
-    ----------
-    s : 2D array of ints
-        Lattice of spin states
-
-    Returns
-    -------
-    energy : int
-        Energy of the state
-    """
+def delta_energy(lattice, i, j, J):
+    """Calculate the energy change for flipping a spin at (i, j). This is the likelihood function
     
-    atomEnergy = [] #Energy for each atom is that atom's spin state times the spin state of its neighbors
-    for i in s:
-        for j in i:
-            atomEnergy.append(s[i,j] * (s[i,j+1] + s[i,j-1] + s[i+1,j] + s[i-1,j]))
+    Parameters
+    ----------
+    lattice : 2D array of ints
+        Lattice of spin states
+    i : int
+        Row of randomly chosen element in the lattice
+    j : int
+        Column of randomly chosen element in the lattice
+    J : int
+        Strength of interaction between neighbors
+    
+    Returns
+    -------
+    int
+        Change in energy for flipping a randomly chosen spin state
 
-    return 1
-    #Find the energy of the given array
-
-def model(x):
-    #Should be the solution that depends on temperature, etc.
-    return 1
-
-def logpost(x):
-    return loglikelihood(x) + logprior(x)
-
-def loglikelihood(s, b, energy, new_array):
-    #b is the Beta value
-    return -b * (energy(new_array(s)) - energy(s))
+    """
+    N = lattice.shape[0]
+    spin = lattice[i, j]
+    neighbors = lattice[(i-1)%N, j] + lattice[(i+1)%N, j] + lattice[i, (j-1)%N] + lattice[i, (j+1)%N]
+    return 2 * J * spin * neighbors
 
 def logprior(x):
     return 1
@@ -90,10 +54,46 @@ def logprior(x):
 def proposal(x): #This is not log
     return np.random.normal() + x
 
-def mcmc(initial, model, prop, post, iterations):
-    t = [] #temp array?
-    e = [] #energy array?
+def mcmc(lattice, beta, J, iterations):
+    N = lattice.shape[0]
 
-    return 1
+    for step in tqdm.tqdm(range(iterations)):
+        i, j = np.random.randint(0, N, size=2)
+        dE = delta_energy(lattice, i, j, J)
+        if dE < 0 or np.random.rand() < np.exp(-beta * dE):
+            lattice[i, j] *= -1
 
-solution = mcmc(1, model, proposal, logpost, 100)
+        if step % 1000 == 0:
+            magnetization = calculate_magnetization(lattice)
+            energy = calculate_energy(lattice, J)
+            print(f"Step: {step}, Magnetization: {magnetization}, Energy: {energy}")
+    return lattice
+
+def calculate_magnetization(lattice):
+    """Calculate the magnetization of the lattice."""
+    return np.sum(lattice)
+
+def calculate_energy(lattice, J):
+    """Calculate the total energy of the lattice."""
+    N = lattice.shape[0]
+    energy = 0
+    for i in range(N):
+        for j in range(N):
+            spin = lattice[i, j]
+            neighbors = lattice[(i-1)%N, j] + lattice[(i+1)%N, j] + lattice[i, (j-1)%N] + lattice[i, (j+1)%N]
+            energy -= J * spin * neighbors
+    return energy / 2  # Each pair counted twice
+
+N = 100
+num_steps = 10000
+lattice = data(N)
+beta = 0.4
+J = 1
+
+mcmc(lattice, beta, J, num_steps)
+
+plt.rcParams["figure.figsize"] = [7.00, 3.50]
+plt.rcParams["figure.autolayout"] = True
+im = plt.imshow(lattice, cmap="magma")
+plt.colorbar(im)
+plt.show()
