@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy.random import uniform
 import tqdm
+import emcee
 
 def data(N):
     """Generate initial random spin data in a lattice structure
@@ -107,8 +108,14 @@ num_steps = 10000
 lattice = data(N)
 beta = 0.4
 J = 1
+order = 8 #Might change this later
 
 mcmc(lattice, beta, J, num_steps)
+
+#Now do the emcee method here and compare
+#Reference data_post.py from class
+#Create the emcee sampler
+sampler = emcee.EnsembleSampler(500, order, delta_energy)
 
 plt.rcParams["figure.figsize"] = [7.00, 3.50]
 plt.rcParams["figure.autolayout"] = True
