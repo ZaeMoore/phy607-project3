@@ -8,9 +8,19 @@ import matplotlib.pyplot as plt
 from numpy.random import uniform
 import tqdm
 
-#Import data
-
 def data(N):
+    """Generate initial random spin data in a lattice structure
+
+    Parameters
+    ----------
+    N : int
+        Size of the spin lattice will be NxN
+
+    Returns
+    -------
+    latticeSpins : 2D array of ints
+        Lattice of spin states
+    """
     latticeSpins = np.zeros(shape=(N, N))
 
     for i in latticeSpins:
@@ -20,6 +30,20 @@ def data(N):
     return latticeSpins
 
 def new_array(s, N):
+    """Generate potential new spin lattice to test
+
+    Parameters
+    ----------
+    s : 2D array of ints
+        Current data to be modified
+    N : int
+        Size of the spin lattice will be NxN
+
+    Returns
+    -------
+    s : 2D array of ints
+        New spin lattice to test
+    """
     #s is the spins array
     randomRow = np.random.choice(range(0, N-1))
     randomColumn = np.random.choice(range(0, N-1))
@@ -28,16 +52,29 @@ def new_array(s, N):
     #Given the old array, pick a random spin entry to flip and return the new array
 
 def energy(s):
+    """Calculate the energy of a state of spins
+
+    Parameters
+    ----------
+    s : 2D array of ints
+        Lattice of spin states
+
+    Returns
+    -------
+    energy : int
+        Energy of the state
+    """
     return 1
     #Find the energy of the given array
 
 def model(x):
+    #Should be the solution that depends on temperature, etc.
     return 1
 
 def logpost(x):
     return loglikelihood(x) + logprior(x)
 
-def loglikelihood(s, b):
+def loglikelihood(s, b, energy, new_array):
     #b is the Beta value
     return -b * (energy(new_array(s)) - energy(s))
 
@@ -50,4 +87,7 @@ def proposal(x): #This is not log
 def mcmc(initial, model, prop, post, iterations):
     t = [] #temp array?
     e = [] #energy array?
+
     return 1
+
+solution = mcmc(1, model, proposal, logpost, 100)
