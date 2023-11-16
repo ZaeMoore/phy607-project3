@@ -94,6 +94,7 @@ mcmc(lattice, beta, J, num_steps)
 
 plt.rcParams["figure.figsize"] = [7.00, 3.50]
 plt.rcParams["figure.autolayout"] = True
+plt.title("Final Spin Lattice")
 im = plt.imshow(lattice, cmap="magma")
 plt.colorbar(im)
 plt.show()
