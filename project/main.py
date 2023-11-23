@@ -1,93 +1,106 @@
-"""
-Main script for project three, Markov Chain Monte Carlo simulation for phy 607
-
-"""
-import math
 import numpy as np
 import matplotlib.pyplot as plt
-from numpy.random import uniform
 import tqdm
+import emcee
 
 def data(N):
-    """Generate initial random spin data in a lattice structure
+    """Generate initial random spin data in a lattice structure"""
+    return np.random.choice([-1, 1], size=(N, N))
 
-    Parameters
-    ----------
-    N : int
-        Size of the spin lattice will be NxN
+def delta_energy(lattice, i, j, J):
+    """Calculate the energy change for flipping a spin at (i, j)."""
+    N = lattice.shape[0]
+    spin = lattice[i, j]
+    neighbors = lattice[(i-1)%N, j] + lattice[(i+1)%N, j] + lattice[i, (j-1)%N] + lattice[i, (j+1)%N]
+    return 2 * J * spin * neighbors
 
-    Returns
-    -------
-    latticeSpins : 2D array of ints
-        Lattice of spin states
-    """
-    latticeSpins = np.zeros(shape=(N, N))
+def mcmc(lattice, beta, J, iterations):
+    """Perform the MCMC simulation."""
+    N = lattice.shape[0]
+    magnetization = []
+    energy = []
 
-    for i in latticeSpins:
-        for j in i:
-            latticeSpins[i,j] = np.random.choice([-1, 1])
+    for step in tqdm.tqdm(range(iterations)):
+        i, j = np.random.randint(0, N, size=2)
+        dE = delta_energy(lattice, i, j, J)
+        if dE < 0 or np.random.rand() < np.exp(-beta * dE):
+            lattice[i, j] *= -1
 
-    return latticeSpins
+        magnetization.append(calculate_magnetization(lattice))
+        energy.append(calculate_energy(lattice, J))
+    return lattice, magnetization, energy
 
-def new_array(s, N):
-    """Generate potential new spin lattice to test
+def calculate_magnetization(lattice):
+    """Calculate the magnetization of the lattice."""
+    return np.sum(lattice)
 
-    Parameters
-    ----------
-    s : 2D array of ints
-        Current data to be modified
-    N : int
-        Size of the spin lattice will be NxN
+def calculate_energy(lattice, J):
+    """Calculate the total energy of the lattice."""
+    N = lattice.shape[0]
+    energy = 0
+    for i in range(N):
+        for j in range(N):
+            spin = lattice[i, j]
+            neighbors = lattice[(i-1)%N, j] + lattice[(i+1)%N, j] + lattice[i, (j-1)%N] + lattice[i, (j+1)%N]
+            energy -= J * spin * neighbors
+    return energy / 2  # Each pair counted twice
 
-    Returns
-    -------
-    s : 2D array of ints
-        New spin lattice to test
-    """
-    #s is the spins array
-    randomRow = np.random.choice(range(0, N-1))
-    randomColumn = np.random.choice(range(0, N-1))
-    s[randomRow, randomColumn] *= -1
-    return s
-    #Given the old array, pick a random spin entry to flip and return the new array
+def specific_heat(energies, beta):
+    """Calculate the specific heat."""
+    energy_sq = np.square(energies)
+    C = (np.mean(energy_sq) - np.mean(energies)**2) * beta**2
+    return C
 
-def energy(s):
-    """Calculate the energy of a state of spins
+# Parameters
+N = 100
+num_steps = 100
+J = 1
+beta_values = np.linspace(0.2, 0.6, 10)
 
-    Parameters
-    ----------
-    s : 2D array of ints
-        Lattice of spin states
+# Data containers
+magnetizations = []
+energies = []
+specific_heats = []
 
-    Returns
-    -------
-    energy : int
-        Energy of the state
-    """
-    return 1
-    #Find the energy of the given array
+for beta in tqdm.tqdm(beta_values):
+    lattice, mag, energy = mcmc(data(N), beta, J, num_steps)
+    magnetizations.append(np.mean(mag))
+    energies.append(np.mean(energy))
+    specific_heats.append(specific_heat(energy, beta))
+    
+# emcee sampler
+sampler = emcee.EnsembleSampler(500, N*N, delta_energy)
 
-def model(x):
-    #Should be the solution that depends on temperature, etc.
-    return 1
+# Visualization of the Final Spin Lattice
+plt.figure()
+plt.rcParams["figure.figsize"] = [7.00, 3.50]
+plt.rcParams["figure.autolayout"] = True
+plt.title("Final Spin Lattice")
+im = plt.imshow(lattice, cmap="magma")
+plt.colorbar(im)
+plt.show()
+    
+# Visualization of Magnetization
+plt.figure(figsize=(6, 4))
+plt.plot(beta_values, magnetizations)
+plt.title("Average Magnetization")
+plt.xlabel("Beta (1/T)")
+plt.ylabel("Magnetization")
+plt.show()
 
-def logpost(x):
-    return loglikelihood(x) + logprior(x)
+# Visualization of Energy
+plt.figure(figsize=(6, 4))
+plt.plot(beta_values, energies)
+plt.title("Average Energy")
+plt.xlabel("Beta (1/T)")
+plt.ylabel("Energy")
+plt.show()
 
-def loglikelihood(s, b, energy, new_array):
-    #b is the Beta value
-    return -b * (energy(new_array(s)) - energy(s))
+# Visualization of Specific Heat
+plt.figure(figsize=(6, 4))
+plt.plot(beta_values, specific_heats)
+plt.title("Specific Heat")
+plt.xlabel("Beta (1/T)")
+plt.ylabel("C")
+plt.show()
 
-def logprior(x):
-    return 1
-
-def proposal(x): #This is not log
-    return np.random.normal() + x
-
-def mcmc(initial, model, prop, post, iterations):
-    t = [] #temp array?
-    e = [] #energy array?
-
-    return 1
-
-solution = mcmc(1, model, proposal, logpost, 100)
