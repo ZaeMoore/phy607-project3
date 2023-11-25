@@ -1,106 +1,96 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import tqdm
-import emcee
+from tqdm import tqdm
 
 def data(N):
-    """Generate initial random spin data in a lattice structure"""
     return np.random.choice([-1, 1], size=(N, N))
 
-def delta_energy(lattice, i, j, J):
-    """Calculate the energy change for flipping a spin at (i, j)."""
-    N = lattice.shape[0]
+def delta_energy(lattice, i, j, J, N):
     spin = lattice[i, j]
     neighbors = lattice[(i-1)%N, j] + lattice[(i+1)%N, j] + lattice[i, (j-1)%N] + lattice[i, (j+1)%N]
     return 2 * J * spin * neighbors
 
-def mcmc(lattice, beta, J, iterations):
-    """Perform the MCMC simulation."""
-    N = lattice.shape[0]
-    magnetization = []
-    energy = []
+def mcmc(lattice, beta, J, total_steps, N, measurement_gap):
+    equilibration_steps = int(0.2 * total_steps)
+    magnetizations = []
+    energies = []
 
-    for step in tqdm.tqdm(range(iterations)):
+    for step in tqdm(range(total_steps)):
         i, j = np.random.randint(0, N, size=2)
-        dE = delta_energy(lattice, i, j, J)
+        dE = delta_energy(lattice, i, j, J, N)
         if dE < 0 or np.random.rand() < np.exp(-beta * dE):
             lattice[i, j] *= -1
+        if step >= equilibration_steps and step % measurement_gap == 0:
+            energies.append(-J * np.sum(lattice * (np.roll(lattice, 1, axis=0) + np.roll(lattice, -1, axis=0) +
+                                      np.roll(lattice, 1, axis=1) + np.roll(lattice, -1, axis=1))))
+            magnetizations.append(np.sum(lattice))
 
-        magnetization.append(calculate_magnetization(lattice))
-        energy.append(calculate_energy(lattice, J))
-    return lattice, magnetization, energy
+    avg_energy = np.mean(energies)
+    avg_magnetization = np.mean(magnetizations)
+    specific_heat_val = (np.var(energies) / (N**2)) * (beta**2)
+    susceptibility = (np.var(magnetizations) / (N**2)) * beta
 
-def calculate_magnetization(lattice):
-    """Calculate the magnetization of the lattice."""
-    return np.sum(lattice)
-
-def calculate_energy(lattice, J):
-    """Calculate the total energy of the lattice."""
-    N = lattice.shape[0]
-    energy = 0
-    for i in range(N):
-        for j in range(N):
-            spin = lattice[i, j]
-            neighbors = lattice[(i-1)%N, j] + lattice[(i+1)%N, j] + lattice[i, (j-1)%N] + lattice[i, (j+1)%N]
-            energy -= J * spin * neighbors
-    return energy / 2  # Each pair counted twice
-
-def specific_heat(energies, beta):
-    """Calculate the specific heat."""
-    energy_sq = np.square(energies)
-    C = (np.mean(energy_sq) - np.mean(energies)**2) * beta**2
-    return C
+    return lattice, avg_magnetization, avg_energy, specific_heat_val, susceptibility
 
 # Parameters
-N = 100
-num_steps = 100
+N = 32  # Increased lattice size for better resolution
+num_steps = 1000000  # Increased total number of steps for better averaging
+measurement_gap = 5  # Measurement gap introduced
 J = 1
-beta_values = np.linspace(0.2, 0.6, 10)
+kB = 1  # Boltzmann constant
+temperature_values = np.linspace(1.6, 2.8, 10)  # Adjusted temperature range
+beta_values = 1 / (kB * temperature_values)
 
 # Data containers
 magnetizations = []
-energies = []
+avg_energies = []
 specific_heats = []
+susceptibilities = []
 
-for beta in tqdm.tqdm(beta_values):
-    lattice, mag, energy = mcmc(data(N), beta, J, num_steps)
-    magnetizations.append(np.mean(mag))
-    energies.append(np.mean(energy))
-    specific_heats.append(specific_heat(energy, beta))
-    
-# emcee sampler
-sampler = emcee.EnsembleSampler(500, N*N, delta_energy)
+for beta in tqdm(beta_values):
+    lattice = data(N)
+    lattice, avg_mag, avg_energy, spec_heat, susceptibility = mcmc(lattice, beta, J, num_steps, N, measurement_gap)
+    magnetizations.append(avg_mag / (N**2))
+    avg_energies.append(avg_energy / (N**2))
+    specific_heats.append(spec_heat)
+    susceptibilities.append(susceptibility)
 
 # Visualization of the Final Spin Lattice
-plt.figure()
-plt.rcParams["figure.figsize"] = [7.00, 3.50]
-plt.rcParams["figure.autolayout"] = True
+plt.figure(figsize=[7.00, 3.50])
 plt.title("Final Spin Lattice")
 im = plt.imshow(lattice, cmap="magma")
 plt.colorbar(im)
 plt.show()
-    
-# Visualization of Magnetization
-plt.figure(figsize=(6, 4))
-plt.plot(beta_values, magnetizations)
-plt.title("Average Magnetization")
-plt.xlabel("Beta (1/T)")
-plt.ylabel("Magnetization")
+
+# Visualization of Energy vs Temperature (scatter plot)
+plt.figure()
+plt.scatter(temperature_values, avg_energies, color='red')
+plt.title("Energy vs Temperature")
+plt.xlabel("Temperature (K)")
+plt.ylabel("Energy (E)")
 plt.show()
 
-# Visualization of Energy
-plt.figure(figsize=(6, 4))
-plt.plot(beta_values, energies)
-plt.title("Average Energy")
-plt.xlabel("Beta (1/T)")
-plt.ylabel("Energy")
+# Visualization of Magnetization vs Temperature (scatter plot)
+plt.figure()
+plt.scatter(temperature_values, magnetizations, color='red')
+plt.title("Magnetisation vs Temperature")
+plt.xlabel("Temperature (K)")
+plt.ylabel("Magnetization (M)")
 plt.show()
 
-# Visualization of Specific Heat
-plt.figure(figsize=(6, 4))
-plt.plot(beta_values, specific_heats)
-plt.title("Specific Heat")
-plt.xlabel("Beta (1/T)")
+# Visualization of Specific Heat vs Temperature (scatter plot)
+plt.figure()
+plt.scatter(temperature_values, specific_heats, color='red')
+plt.title("Specific Heat vs Temperature")
+plt.xlabel("Temperature (K)")
 plt.ylabel("C")
+plt.show()
+
+# Visualization of Susceptibility vs Temperature (scatter plot)
+plt.figure()
+plt.scatter(temperature_values, susceptibilities, color='red')
+plt.title("Susceptibility vs Temperature")
+plt.xlabel("Temperature (K)")
+plt.ylabel("Susceptibility (χ)")
 plt.show()
 
