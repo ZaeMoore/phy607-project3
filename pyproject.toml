@@ -8,9 +8,9 @@ dependencies = [
 ]
 authors = [
     {name = "Zae Moore", email = "emoore06@syr.edu"},
-    {name = "", email = "@syr.edu"},
+    {name = "Asif Iqbal", email = "@syr.edu"},
 ]
-description = "A Markov Chain Monte Carlo simulation package that "
+description = "A Markov Chain Monte Carlo simulation package that simulates the 2D Ising Model"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
