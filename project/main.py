@@ -1,11 +1,42 @@
+"""
+Main script for project three, Markov Chain Monte Carlo simulation for phy 607
+
+"""
+import math
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.random import uniform
 from tqdm import tqdm
+import emcee
 
 def data(N):
+    """Generate initial random spin data in a lattice structure
+    N : int
+        Size of the spin lattice will be NxN
+    latticeSpins : 2D array of ints
+        Lattice of spin states
+    """
     return np.random.choice([-1, 1], size=(N, N))
 
 def delta_energy(lattice, i, j, J, N):
+    """Calculate the energy change for flipping a spin at (i, j). This is the likelihood function
+    
+    Parameters
+    ----------
+    lattice : 2D array of ints
+        Lattice of spin states
+    i : int
+        Row of randomly chosen element in the lattice
+    j : int
+        Column of randomly chosen element in the lattice
+    J : int
+        Strength of interaction between neighbors
+    
+    Returns
+    -------
+    int
+        Change in energy for flipping a randomly chosen spin state
+    """
     spin = lattice[i, j]
     neighbors = lattice[(i-1)%N, j] + lattice[(i+1)%N, j] + lattice[i, (j-1)%N] + lattice[i, (j+1)%N]
     return 2 * J * spin * neighbors
@@ -31,6 +62,11 @@ def mcmc(lattice, beta, J, total_steps, N, measurement_gap):
     susceptibility = (np.var(magnetizations) / (N**2)) * beta
 
     return lattice, avg_magnetization, avg_energy, specific_heat_val, susceptibility
+
+#Now do the emcee method here and compare
+#Reference data_post.py from class
+#Create the emcee sampler
+#sampler = emcee.EnsembleSampler(500, order, delta_energy)
 
 # Parameters
 N = 32  # Increased lattice size for better resolution
@@ -93,4 +129,3 @@ plt.title("Susceptibility vs Temperature")
 plt.xlabel("Temperature (K)")
 plt.ylabel("Susceptibility (χ)")
 plt.show()
-
