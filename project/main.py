@@ -11,8 +11,14 @@ import emcee
 
 def data(N):
     """Generate initial random spin data in a lattice structure
+
+    Parameters
+    ----------
     N : int
         Size of the spin lattice will be NxN
+
+    Returns
+    -------
     latticeSpins : 2D array of ints
         Lattice of spin states
     """
@@ -42,6 +48,37 @@ def delta_energy(lattice, i, j, J, N):
     return 2 * J * spin * neighbors
 
 def mcmc(lattice, beta, J, total_steps, N, measurement_gap):
+    """Run the Markov Chain Monte Carlo simulation for a number of steps and record the results
+    
+    Parameters
+    ----------
+    lattice : 2D array of ints
+        Lattice of spin states
+    beta : float
+        Value of beta = 1/KbT
+    J : int
+        Strength of interaction between neighbors
+    total_steps : int
+        Number of steps to be done in the mcmc
+    N : int
+        Size of the spin lattice is NxN
+    measurement_gap : int
+        Determines how often the mcmc measures physical properties of the system
+
+    Returns
+    -------
+    lattice : 2D array of ints
+        Updated lattice of spin states
+    avg_magnetization : float
+        Average magnetization of system
+    avg_energy : float
+        Average energy of system
+    specific_heat_val : float
+        Specific heat of system
+    susceptibility : float
+        Susceptibility of system
+
+    """
     equilibration_steps = int(0.2 * total_steps)
     magnetizations = []
     energies = []
@@ -61,7 +98,7 @@ def mcmc(lattice, beta, J, total_steps, N, measurement_gap):
     specific_heat_val = (np.var(energies) / (N**2)) * (beta**2)
     susceptibility = (np.var(magnetizations) / (N**2)) * beta
 
-    return lattice, avg_magnetization, avg_energy, specific_heat_val, susceptibility
+    return lattice, avg_magnetization, avg_energy, specific_heat_val, susceptibility, energies, magnetizations
 
 #Now do the emcee method here and compare
 #Reference data_post.py from class
@@ -82,26 +119,33 @@ magnetizations = []
 avg_energies = []
 specific_heats = []
 susceptibilities = []
+energy_plot = []
+mag_plot = []
+lattice_list = []
 
 for beta in tqdm(beta_values):
     lattice = data(N)
-    lattice, avg_mag, avg_energy, spec_heat, susceptibility = mcmc(lattice, beta, J, num_steps, N, measurement_gap)
+    lattice, avg_mag, avg_energy, spec_heat, susceptibility, energy_list, mag_list = mcmc(lattice, beta, J, num_steps, N, measurement_gap)
     magnetizations.append(avg_mag / (N**2))
     avg_energies.append(avg_energy / (N**2))
     specific_heats.append(spec_heat)
     susceptibilities.append(susceptibility)
+    energy_plot.append(energy_list)
+    mag_plot.append(mag_list)
+    lattice_list.append(lattice)
 
 # Visualization of the Final Spin Lattice
-plt.figure(figsize=[7.00, 3.50])
-plt.title("Final Spin Lattice")
-im = plt.imshow(lattice, cmap="magma")
-plt.colorbar(im)
-plt.show()
+for i in range(len(beta_values)):
+    plt.figure(figsize=[7.00, 3.50])
+    plt.title("Final Spin Lattice for Temperature %s"%temperature_values[i])
+    im = plt.imshow(lattice_list[i], cmap="magma")
+    plt.colorbar(im)
+    plt.show()
 
 # Visualization of Energy vs Temperature (scatter plot)
 plt.figure()
 plt.scatter(temperature_values, avg_energies, color='red')
-plt.title("Energy vs Temperature")
+plt.title("Average Energy vs Temperature")
 plt.xlabel("Temperature (K)")
 plt.ylabel("Energy (E)")
 plt.show()
@@ -109,7 +153,7 @@ plt.show()
 # Visualization of Magnetization vs Temperature (scatter plot)
 plt.figure()
 plt.scatter(temperature_values, magnetizations, color='red')
-plt.title("Magnetisation vs Temperature")
+plt.title("Average Magnetisation vs Temperature")
 plt.xlabel("Temperature (K)")
 plt.ylabel("Magnetization (M)")
 plt.show()
@@ -129,3 +173,24 @@ plt.title("Susceptibility vs Temperature")
 plt.xlabel("Temperature (K)")
 plt.ylabel("Susceptibility (χ)")
 plt.show()
+
+# Visualization of Energy over time for each Temp value
+plt.figure()
+for i in range(len(energy_plot)):
+    plt.plot(energy_plot[i], label = "Temperature %.2f"%temperature_values[i])
+plt.legend(loc='upper right', fontsize='small')
+plt.title("Energy over Time for each Temperature")
+plt.xlabel("Time")
+plt.ylabel("Energy (E)")
+plt.show()
+
+# Visualization of Magnetization over time for each Temp value
+plt.figure()
+for i in range(len(mag_plot)):
+    plt.plot(mag_plot[i], label = "Temperature %.2f"%temperature_values[i])
+plt.legend(fontsize='medium')
+plt.title("Magnetization over Time for each Temperature")
+plt.xlabel("Time")
+plt.ylabel("Magnetization (M)")
+plt.show()
+
