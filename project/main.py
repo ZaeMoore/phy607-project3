@@ -195,13 +195,13 @@ plt.ylabel("Magnetization (M)")
 plt.show()
 
 # Parameters for multiple chain analysis
-num_chains = 5  # Define the number of independent chains
+num_chains = 5  # the number of independent chains
 energies_all_chains = []
 magnetizations_all_chains = []
 
 # Running multiple independent chains and storing only energy and magnetization data
 for chain in range(num_chains):
-    lattice = data(N)  # Initialize each chain with a different lattice
+    lattice = data(N)  # Initializing each chain with a different lattice
     _, _, _, _, _, energies, magnetizations = mcmc(
         lattice, beta, J, num_steps, N, measurement_gap)
     energies_all_chains.append(energies)
@@ -211,11 +211,15 @@ for chain in range(num_chains):
 def gelman_rubin(data):
     n = len(data[0])  # Number of samples per chain
     m = len(data)     # Number of chains
+	# Mean of each chain and overall mean
     chain_means = np.mean(data, axis=1)
     overall_mean = np.mean(chain_means)
+    # Between-chain variance and Within-chain variance
     B_over_n = np.sum((chain_means - overall_mean)**2) / (m - 1)
     W = np.sum([np.var(chain, ddof=1) for chain in data]) / m
+    # Variance estimate
     var_plus = ((n - 1) / n) * W + B_over_n
+    # Potential scale reduction factor
     R_hat = np.sqrt(var_plus / W)
     return R_hat
 
