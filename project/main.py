@@ -194,3 +194,55 @@ plt.xlabel("Time")
 plt.ylabel("Magnetization (M)")
 plt.show()
 
+# Parameters for multiple chain analysis
+num_chains = 5  # Define the number of independent chains
+energies_all_chains = []
+magnetizations_all_chains = []
+
+# Running multiple independent chains and storing only energy and magnetization data
+for chain in range(num_chains):
+    lattice = data(N)  # Initialize each chain with a different lattice
+    _, _, _, _, _, energies, magnetizations = mcmc(
+        lattice, beta, J, num_steps, N, measurement_gap)
+    energies_all_chains.append(energies)
+    magnetizations_all_chains.append(magnetizations)
+
+# Gelman-Rubin Diagnostic Function
+def gelman_rubin(data):
+    n = len(data[0])  # Number of samples per chain
+    m = len(data)     # Number of chains
+    chain_means = np.mean(data, axis=1)
+    overall_mean = np.mean(chain_means)
+    B_over_n = np.sum((chain_means - overall_mean)**2) / (m - 1)
+    W = np.sum([np.var(chain, ddof=1) for chain in data]) / m
+    var_plus = ((n - 1) / n) * W + B_over_n
+    R_hat = np.sqrt(var_plus / W)
+    return R_hat
+
+# Apply Gelman-Rubin Diagnostic for Magnetization and Energy
+R_hat_magnetization = gelman_rubin(magnetizations_all_chains)
+R_hat_energy = gelman_rubin(energies_all_chains)
+
+# Plotting the energy for each chain
+plt.figure(figsize=(12, 6))
+for i, energy_chain in enumerate(energies_all_chains):
+    plt.plot(energy_chain, label=f'Chain {i+1}')
+plt.xlabel('Steps')
+plt.ylabel('Energy')
+plt.title('Energy for Each Chain')
+plt.legend()
+plt.show()
+
+# Plotting the magnetization for each chain
+plt.figure(figsize=(12, 6))
+for i, magnetization_chain in enumerate(magnetizations_all_chains):
+    plt.plot(magnetization_chain, label=f'Chain {i+1}')
+plt.xlabel('Steps')
+plt.ylabel('Magnetization')
+plt.title('Magnetization for Each Chain')
+plt.legend()
+plt.show()
+
+print("Gelman-Rubin Diagnostic for Magnetization:", R_hat_magnetization)
+print("Gelman-Rubin Diagnostic for Energy:", R_hat_energy)
+
