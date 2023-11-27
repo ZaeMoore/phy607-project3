@@ -5,10 +5,12 @@ dependencies = [
     "numpy",
     "scipy",
     "matplotlib",
+    "pymc3",
+    "theano",
 ]
 authors = [
     {name = "Zae Moore", email = "emoore06@syr.edu"},
-    {name = "Asif Iqbal", email = "@syr.edu"},
+    {name = "Asif Iqbal", email = "smiqbal@syr.edu"},
 ]
 description = "A Markov Chain Monte Carlo simulation package that simulates the 2D Ising Model"
 readme = "README.md"
