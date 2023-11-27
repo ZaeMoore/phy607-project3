@@ -2,12 +2,12 @@
 Main script for project three, Markov Chain Monte Carlo simulation for phy 607
 
 """
-import math
 import numpy as np
 import matplotlib.pyplot as plt
 from numpy.random import uniform
 from tqdm import tqdm
-import emcee
+import pymc3 as pm
+import theano.tensor as tt
 
 def data(N):
     """Generate initial random spin data in a lattice structure
@@ -100,10 +100,31 @@ def mcmc(lattice, beta, J, total_steps, N, measurement_gap):
 
     return lattice, avg_magnetization, avg_energy, specific_heat_val, susceptibility, energies, magnetizations
 
-#Now do the emcee method here and compare
-#Reference data_post.py from class
-#Create the emcee sampler
-#sampler = emcee.EnsembleSampler(500, order, delta_energy)
+#pymc3
+def get_H(spins):
+    H = - (
+        tt.roll(spins, 1, axis=1) * spins +
+        tt.roll(spins, 1, axis=0) * spins +
+        tt.roll(spins, -1, axis=1) * spins +
+        tt.roll(spins, -1, axis=0) * spins
+    )
+    return H
+
+def to_spins(lattice):
+    return 2 * lattice - 1
+
+def mc3_approach(beta, N, num_steps=10):
+    shape = (N, N)
+    x0 = np.random.randint(2, size=shape)
+    with pm.Model() as model:
+        x = pm.Bernoulli('x', 0.5, shape=shape, testval=x0)
+        magnetization = pm.Potential('m', -get_H(to_spins(x)) * beta)
+        scaling = .0006
+        mul = int(N * N * 1.75)
+        step = pm.BinaryMetropolis([x], scaling=scaling)
+        trace = pm.sample(num_steps * mul * 5, step=step, chains=1, tune=False)
+    lattice = 2 * trace[-1]['x'] - 1
+    return lattice, trace
 
 # Parameters
 N = 32  # Increased lattice size for better resolution
@@ -122,6 +143,8 @@ susceptibilities = []
 energy_plot = []
 mag_plot = []
 lattice_list = []
+mc3_lattice_list = []
+
 
 for beta in tqdm(beta_values):
     lattice = data(N)
@@ -133,14 +156,21 @@ for beta in tqdm(beta_values):
     energy_plot.append(energy_list)
     mag_plot.append(mag_list)
     lattice_list.append(lattice)
+    mc3_lattice, trace = mc3_approach(beta, N)
+    mc3_lattice_list.append(mc3_lattice)
+
 
 # Visualization of the Final Spin Lattice
 for i in range(len(beta_values)):
-    plt.figure(figsize=[7.00, 3.50])
-    plt.title("Final Spin Lattice for Temperature %s"%temperature_values[i])
-    im = plt.imshow(lattice_list[i], cmap="magma")
-    plt.colorbar(im)
+    fig, axes = plt.subplots(nrows=1, ncols=2)
+    im = axes[0].imshow(lattice_list[i], cmap="magma")
+    im = axes[1].imshow(lattice_list[i], cmap="magma")
+
+    fig.subplots_adjust(right=0.8)
+    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+    fig.colorbar(im, cax=cbar_ax)
     plt.show()
+
 
 # Visualization of Energy vs Temperature (scatter plot)
 plt.figure()
