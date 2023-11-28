@@ -8,10 +8,6 @@ To run, simply install the package and enter "run-chain" in the terminal
 
 The tests directory holds valuable guidance as well, including example outputs and jupyter notebooks.
 
-testrun_neg1start.ipynb is an example run where the lattice was initialized with entirely -1 spins.
+There are 3 directories inside the tests directory, each one indicated tests that were run with different initial conditions. neg1_start_tests contains examples where the lattice was initialized with entirely -1 spins. pos1_start_tests contains examples where the lattice was initialized with entirely +1 spins. random_start_tests contains examples where the lattice was initialized with random spins.
 
-testrun_pos1start.ipynb is an example run where the lattice was initialized with entirely +1 spins.
-
-testrun_randstart.ipynb is an example run where the lattice was initialized with random spins.
-
-.png files in the test directory show example outputs. File names that end with "_n1start" are from runs where the lattice was initialized with entirely -1 spins. File names that end with "_p1start" are from runs where the lattice was initialized with entirely +1 spins. File names that end with "_randstart" are from runs where the lattice was initialized with random spins.
+Each test directory contains a jupyter notebook and output pngs
