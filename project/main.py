@@ -10,7 +10,7 @@ import pymc3 as pm
 import theano.tensor as tt
 
 
-def data(N, initialization):
+def data(size, initialization):
     """Generate initial random spin data in a lattice structure
 
     Parameters
@@ -25,18 +25,19 @@ def data(N, initialization):
     latticeSpins : 2D array of ints
         Lattice of spin states
     """
+    lattice_size = (size, size)
     if initialization == 1:
-        return np.ones((N, N))
+        return np.ones(lattice_size)
     elif initialization == -1:
-        return -1 * np.ones((N, N))
+        return -1 * np.ones(lattice_size)
     elif initialization == 0:
-        return np.random.choice([-1, 1], size=(N, N))
+        return np.random.choice([-1, 1], size=lattice_size)
     else:
         print("Invalid option. Assuming random initial states")
-        return np.random.choice([-1, 1], size=(N, N))
+        return np.random.choice([-1, 1], size=lattice_size)
 
 
-def delta_energy(lattice, i, j, J, N):
+def delta_energy(lattice, i, j, j_param, size):
     """Calculate the energy change for flipping a spin at (i, j). This is the likelihood function
 
     Parameters
@@ -57,15 +58,15 @@ def delta_energy(lattice, i, j, J, N):
     """
     spin = lattice[i, j]
     neighbors = (
-        lattice[(i - 1) % N, j]
-        + lattice[(i + 1) % N, j]
-        + lattice[i, (j - 1) % N]
-        + lattice[i, (j + 1) % N]
+        lattice[(i - 1) % size, j]
+        + lattice[(i + 1) % size, j]
+        + lattice[i, (j - 1) % size]
+        + lattice[i, (j + 1) % size]
     )
-    return 2 * J * spin * neighbors
+    return 2 * j_param * spin * neighbors
 
 
-def mcmc(lattice, beta, J, total_steps, N, measurement_gap):
+def mcmc(lattice, beta, j_param, total_steps, size, measurement_gap):
     """Run the Markov Chain Monte Carlo simulation for a number of steps and record the results
 
     Parameters
@@ -102,13 +103,13 @@ def mcmc(lattice, beta, J, total_steps, N, measurement_gap):
     energies = []
 
     for step in tqdm(range(total_steps)):
-        i, j = np.random.randint(0, N, size=2)
-        dE = delta_energy(lattice, i, j, J, N)
+        i, j = np.random.randint(0, size, size=2)
+        dE = delta_energy(lattice, i, j, j_param, size)
         if dE < 0 or np.random.rand() < np.exp(-beta * dE):
             lattice[i, j] *= -1
         if step >= equilibration_steps and step % measurement_gap == 0:
             energies.append(
-                -J
+                -j_param
                 * np.sum(
                     lattice
                     * (
@@ -123,8 +124,8 @@ def mcmc(lattice, beta, J, total_steps, N, measurement_gap):
 
     avg_energy = np.mean(energies)
     avg_magnetization = np.mean(magnetizations)
-    specific_heat_val = (np.var(energies) / (N**2)) * (beta**2)
-    susceptibility = (np.var(magnetizations) / (N**2)) * beta
+    specific_heat_val = (np.var(energies) / (size**2)) * (beta**2)
+    susceptibility = (np.var(magnetizations) / (size**2)) * beta
 
     return (
         lattice,
@@ -180,7 +181,7 @@ def to_spins(lattice):
     return 2 * lattice - 1
 
 
-def mc3_approach(beta, N, num_steps=10):
+def mc3_approach(beta, size, num_steps=10):
     """Pymc3 approach
     I wrote this while being repeatedly stabbed by tiny ink filled needles
 
@@ -201,13 +202,13 @@ def mc3_approach(beta, N, num_steps=10):
         Spin lattice at every step
 
     """
-    shape = (N, N)
+    shape = (size, size)
     x0 = np.random.randint(2, size=shape)
     with pm.Model() as model:
         x = pm.Bernoulli("x", 0.5, shape=shape, testval=x0)
         magnetization = pm.Potential("m", -get_Energy(to_spins(x)) * beta)
         scaling = 0.0006
-        mul = int(N * N * 1.75)
+        mul = int(size * size * 1.75)
         step = pm.BinaryMetropolis([x], scaling=scaling)
         trace = pm.sample(num_steps * mul * 5, step=step, chains=1, tune=False)
     lattice = 2 * trace[-1]["x"] - 1
@@ -215,13 +216,13 @@ def mc3_approach(beta, N, num_steps=10):
 
 
 # Parameters
-N = 32  # Increased lattice size for better resolution
+size = 32  # Increased lattice size for better resolution
 num_steps = 1000000  # Increased total number of steps for better averaging
 measurement_gap = 5  # Measurement gap introduced
-J = 1  # Interaction parameter
-kB = 1  # Boltzmann constant
+j_param = 1  # Interaction parameter
+kb = 1  # Boltzmann constant
 temperature_values = np.linspace(1.6, 2.8, 10)  # Adjusted temperature range
-beta_values = 1 / (kB * temperature_values)
+beta_values = 1 / (kb * temperature_values)
 
 # Data containers
 magnetizations = []
@@ -243,7 +244,7 @@ initialization = int(
 
 # Testing different temperatures to find the phase transition
 for beta in tqdm(beta_values):
-    lattice = data(N, initialization)
+    lattice = data(size, initialization)
     (
         lattice,
         avg_mag,
@@ -252,15 +253,15 @@ for beta in tqdm(beta_values):
         susceptibility,
         energy_list,
         mag_list,
-    ) = mcmc(lattice, beta, J, num_steps, N, measurement_gap)
-    magnetizations.append(avg_mag / (N**2))
-    avg_energies.append(avg_energy / (N**2))
+    ) = mcmc(lattice, beta, j_param, num_steps, size, measurement_gap)
+    magnetizations.append(avg_mag / (size**2))
+    avg_energies.append(avg_energy / (size**2))
     specific_heats.append(spec_heat)
     susceptibilities.append(susceptibility)
     energy_plot.append(energy_list)
     mag_plot.append(mag_list)
     lattice_list.append(lattice)
-    mc3_lattice, trace = mc3_approach(beta, N)
+    mc3_lattice, trace = mc3_approach(beta, size)
     mc3_lattice_list.append(mc3_lattice)
 
 
@@ -339,10 +340,10 @@ magnetizations_all_chains = []
 # Running multiple independent chains and storing only energy and magnetization data
 for chain in range(num_chains):
     lattice = data(
-        N, initialization
+        size, initialization
     )  # Initializing each chain with a different lattice
     _, _, _, _, _, energies, magnetizations = mcmc(
-        lattice, beta, J, num_steps, N, measurement_gap
+        lattice, beta, j_param, num_steps, size, measurement_gap
     )
     energies_all_chains.append(energies)
     magnetizations_all_chains.append(magnetizations)
@@ -359,7 +360,7 @@ def gelman_rubin(data):
 
     Returns
     -------
-    R_hat : float
+    r_hat : float
 
     """
     n = len(data[0])  # Number of samples per chain
@@ -368,18 +369,18 @@ def gelman_rubin(data):
     chain_means = np.mean(data, axis=1)
     overall_mean = np.mean(chain_means)
     # Between-chain variance and Within-chain variance
-    B_over_n = np.sum((chain_means - overall_mean) ** 2) / (m - 1)
+    b_over_n = np.sum((chain_means - overall_mean) ** 2) / (m - 1)
     W = np.sum([np.var(chain, ddof=1) for chain in data]) / m
     # Variance estimate
-    var_plus = ((n - 1) / n) * W + B_over_n
+    var_plus = ((n - 1) / n) * W + b_over_n
     # Potential scale reduction factor
-    R_hat = np.sqrt(var_plus / W)
-    return R_hat
+    r_hat = np.sqrt(var_plus / W)
+    return r_hat
 
 
 # Apply Gelman-Rubin Diagnostic for Magnetization and Energy
-R_hat_magnetization = gelman_rubin(magnetizations_all_chains)
-R_hat_energy = gelman_rubin(energies_all_chains)
+r_hat_magnetization = gelman_rubin(magnetizations_all_chains)
+r_hat_energy = gelman_rubin(energies_all_chains)
 
 # Plotting the energy for each chain
 plt.figure(figsize=(12, 6))
@@ -401,6 +402,6 @@ plt.title("Magnetization for Each Chain")
 plt.legend()
 plt.show()
 
-print("Gelman-Rubin Diagnostic for Magnetization:", R_hat_magnetization)
-print("Gelman-Rubin Diagnostic for Energy:", R_hat_energy)
+print("Gelman-Rubin Diagnostic for Magnetization:", r_hat_magnetization)
+print("Gelman-Rubin Diagnostic for Energy:", r_hat_energy)
 print("Simulation Complete")
