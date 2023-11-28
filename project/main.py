@@ -9,20 +9,30 @@ from tqdm import tqdm
 import pymc3 as pm
 import theano.tensor as tt
 
-def data(N):
+def data(N, initialization):
     """Generate initial random spin data in a lattice structure
 
     Parameters
     ----------
     N : int
         Size of the spin lattice will be NxN
+    initialization : int
+        Determines the starting state of the lattice
 
     Returns
     -------
     latticeSpins : 2D array of ints
         Lattice of spin states
     """
-    return np.random.choice([-1, 1], size=(N, N))
+    if initialization == 1:
+        return np.ones((N, N))
+    elif initialization == -1:
+        return -1 * np.ones((N, N))
+    elif initialization == 0:
+        return np.random.choice([-1, 1], size=(N, N))
+    else:
+        print("Invalid option. Assuming random initial states")
+        return np.random.choice([-1, 1], size=(N, N))
 
 def delta_energy(lattice, i, j, J, N):
     """Calculate the energy change for flipping a spin at (i, j). This is the likelihood function
@@ -193,9 +203,11 @@ mag_plot = []
 lattice_list = []
 mc3_lattice_list = []
 
+initialization = int(input("Initializing spin lattice state. Please choose initial state. \n Type '1' for all spins to be set to +1. \n Type '-1' for all spins to be set to -1. \n Type '0' for spins to be random. \n Initial state input: "))
+
 #Testing different temperatures to find the phase transition
 for beta in tqdm(beta_values):
-    lattice = data(N)
+    lattice = data(N, initialization)
     lattice, avg_mag, avg_energy, spec_heat, susceptibility, energy_list, mag_list = mcmc(lattice, beta, J, num_steps, N, measurement_gap)
     magnetizations.append(avg_mag / (N**2))
     avg_energies.append(avg_energy / (N**2))
@@ -210,16 +222,16 @@ for beta in tqdm(beta_values):
 
 # Visualization of the Final Spin Lattice
 for i in range(len(beta_values)):
-    fig, axes = plt.subplots(nrows=1, ncols=2)
+    fig, axes = plt.subplots(nrows=1, ncols=2, constrained_layout=True)
     im = axes[0].imshow(lattice_list[i], cmap="magma")
     axes[0].set_title('Handwritten MCMC')
     im = axes[1].imshow(mc3_lattice_list[i], cmap="magma")
-    axes[0].set_title('pymc3')
-    plt.title("Final Lattice State at Temperature %.2f"%temperature_values[i])
+    axes[1].set_title('pymc3')
 
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
     fig.colorbar(im, cax=cbar_ax)
+    fig.suptitle("Final Lattice State at Temperature %.2f"%temperature_values[i])
     plt.show()
 
 
@@ -282,7 +294,7 @@ magnetizations_all_chains = []
 
 # Running multiple independent chains and storing only energy and magnetization data
 for chain in range(num_chains):
-    lattice = data(N)  # Initializing each chain with a different lattice
+    lattice = data(N, initialization)  # Initializing each chain with a different lattice
     _, _, _, _, _, energies, magnetizations = mcmc(
         lattice, beta, J, num_steps, N, measurement_gap)
     energies_all_chains.append(energies)
@@ -342,4 +354,4 @@ plt.show()
 
 print("Gelman-Rubin Diagnostic for Magnetization:", R_hat_magnetization)
 print("Gelman-Rubin Diagnostic for Energy:", R_hat_energy)
-
+print("Simulation Complete")
