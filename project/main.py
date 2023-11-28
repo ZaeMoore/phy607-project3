@@ -212,9 +212,10 @@ for beta in tqdm(beta_values):
 for i in range(len(beta_values)):
     fig, axes = plt.subplots(nrows=1, ncols=2)
     im = axes[0].imshow(lattice_list[i], cmap="magma")
-    plt.title("Handwritten mcmc Final Lattice")
+    axes[0].set_title('Handwritten MCMC')
     im = axes[1].imshow(mc3_lattice_list[i], cmap="magma")
-    plt.title("pymc3 Final Lattice")
+    axes[0].set_title('pymc3')
+    plt.title("Final Lattice State at Temperature %.2f"%temperature_values[i])
 
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
