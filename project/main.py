@@ -1,5 +1,5 @@
 """
-Main script for project three, Markov Chain Monte Carlo simulation for phy 607
+Markov Chain Monte Carlo simulation of 2D Ising Model
 
 """
 import numpy as np
@@ -101,24 +101,72 @@ def mcmc(lattice, beta, J, total_steps, N, measurement_gap):
     return lattice, avg_magnetization, avg_energy, specific_heat_val, susceptibility, energies, magnetizations
 
 #pymc3
-def get_H(spins):
-    H = - (
+def get_Energy(spins):
+    """Calculates the energy of the spin lattice at a particular state
+    
+    Parameters
+    ----------
+    spins : 2D array of ints
+        Lattice of spin states
+
+    Returns
+    -------
+    energy : int
+        Energy of the state
+
+    """
+    energy = - (
         tt.roll(spins, 1, axis=1) * spins +
         tt.roll(spins, 1, axis=0) * spins +
         tt.roll(spins, -1, axis=1) * spins +
         tt.roll(spins, -1, axis=0) * spins
     )
-    return H
+    return energy
 
 def to_spins(lattice):
+    """Adapts the pymc3 spin lattice from 0s and 1s to -1s and +1s
+    Pymc3 cannot efficiently make a lattice with negative values, so
+    we have it create one of 1s and 0s and then manipulate it after
+    
+    Parameters
+    ----------
+    lattice : 2D array of ints
+        Lattice of spin states in 0s and +1s
+
+    Returns
+    -------
+    2D array of ints
+        Lattice of spin states in +1s and -1s
+
+    """
     return 2 * lattice - 1
 
 def mc3_approach(beta, N, num_steps=10):
+    """Pymc3 approach
+    I wrote this while being repeatedly stabbed by tiny ink filled needles
+    
+    Parameters
+    ----------
+    beta : float
+        Value of beta = 1/KbT
+    num_steps : int
+        Number of steps to be done in the mcmc
+    N : int
+        Size of the spin lattice is NxN
+
+    Returns
+    -------
+    lattice : 2D array of ints
+        Updated lattice of spin states
+    trace : MultiTrace
+        Spin lattice at every step
+
+    """
     shape = (N, N)
     x0 = np.random.randint(2, size=shape)
     with pm.Model() as model:
         x = pm.Bernoulli('x', 0.5, shape=shape, testval=x0)
-        magnetization = pm.Potential('m', -get_H(to_spins(x)) * beta)
+        magnetization = pm.Potential('m', -get_Energy(to_spins(x)) * beta)
         scaling = .0006
         mul = int(N * N * 1.75)
         step = pm.BinaryMetropolis([x], scaling=scaling)
@@ -130,7 +178,7 @@ def mc3_approach(beta, N, num_steps=10):
 N = 32  # Increased lattice size for better resolution
 num_steps = 1000000  # Increased total number of steps for better averaging
 measurement_gap = 5  # Measurement gap introduced
-J = 1
+J = 1 # Interaction parameter
 kB = 1  # Boltzmann constant
 temperature_values = np.linspace(1.6, 2.8, 10)  # Adjusted temperature range
 beta_values = 1 / (kB * temperature_values)
@@ -145,7 +193,7 @@ mag_plot = []
 lattice_list = []
 mc3_lattice_list = []
 
-
+#Testing different temperatures to find the phase transition
 for beta in tqdm(beta_values):
     lattice = data(N)
     lattice, avg_mag, avg_energy, spec_heat, susceptibility, energy_list, mag_list = mcmc(lattice, beta, J, num_steps, N, measurement_gap)
@@ -164,7 +212,9 @@ for beta in tqdm(beta_values):
 for i in range(len(beta_values)):
     fig, axes = plt.subplots(nrows=1, ncols=2)
     im = axes[0].imshow(lattice_list[i], cmap="magma")
-    im = axes[1].imshow(lattice_list[i], cmap="magma")
+    plt.title("Handwritten mcmc Final Lattice")
+    im = axes[1].imshow(mc3_lattice_list[i], cmap="magma")
+    plt.title("pymc3 Final Lattice")
 
     fig.subplots_adjust(right=0.8)
     cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
@@ -239,6 +289,18 @@ for chain in range(num_chains):
 
 # Gelman-Rubin Diagnostic Function
 def gelman_rubin(data):
+    """Gelman-Rubin Diagnostic Function
+    
+    Parameters
+    ----------
+    data : Array of floats
+        Array of either energy or magnetization data for every chain
+
+    Returns
+    -------
+    R_hat : float
+
+    """
     n = len(data[0])  # Number of samples per chain
     m = len(data)     # Number of chains
 	# Mean of each chain and overall mean
