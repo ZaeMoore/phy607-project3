@@ -22,7 +22,7 @@ classifiers = [
 ]
 
 [project.scripts]
-run-chain = "project.main"
+run-chain = "project:main"
 
 [project.urls]
 "Homepage" = "https://github.com/ZaeMoore/phy607-project3"
