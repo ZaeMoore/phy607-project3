@@ -6,7 +6,6 @@ dependencies = [
     "scipy",
     "matplotlib",
     "pymc3",
-    "theano",
 ]
 authors = [
     {name = "Zae Moore", email = "emoore06@syr.edu"},
