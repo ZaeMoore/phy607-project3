@@ -8,6 +8,7 @@ from numpy.random import uniform
 from tqdm import tqdm
 import pymc3 as pm
 import theano.tensor as tt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def data(size, initialization):
@@ -267,15 +268,16 @@ for beta in tqdm(beta_values):
 
 # Visualization of the Final Spin Lattice
 for i in range(len(beta_values)):
-    fig, axes = plt.subplots(nrows=1, ncols=2, constrained_layout=True)
-    im = axes[0].imshow(lattice_list[i], cmap="magma")
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize= (7,4), constrained_layout=True)
+    im = axes[0].imshow(lattice_list[i], cmap="magma", aspect="equal")
     axes[0].set_title("Handwritten MCMC")
-    im = axes[1].imshow(mc3_lattice_list[i], cmap="magma")
+    im = axes[1].imshow(mc3_lattice_list[i], cmap="magma", aspect="equal")
     axes[1].set_title("pymc3")
 
     fig.subplots_adjust(right=0.8)
-    cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
-    fig.colorbar(im, cax=cbar_ax)
+    divider = make_axes_locatable(axes[1])
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    fig.colorbar(im, cax=cax)
     fig.suptitle("Final Lattice State at Temperature %.2f" % temperature_values[i])
     plt.show()
 
