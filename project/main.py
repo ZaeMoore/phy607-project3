@@ -99,15 +99,19 @@ def mcmc(lattice, beta, j_param, total_steps, size, measurement_gap):
         Susceptibility of system
 
     """
-    equilibration_steps = int(0.2 * total_steps)
+def mcmc(lattice, beta, j_param, total_steps, size, measurement_gap):
+    equilibration_steps = int(0.20 * total_steps)
     magnetizations = []
     energies = []
+    center_spin_trace = []  # Initialize the list to store the trace
 
     for step in tqdm(range(total_steps)):
         i, j = np.random.randint(0, size, size=2)
         dE = delta_energy(lattice, i, j, j_param, size)
         if dE < 0 or np.random.rand() < np.exp(-beta * dE):
             lattice[i, j] *= -1
+            if step % measurement_gap == 0:  # Record the spin at the center on measurement steps
+                center_spin_trace.append(lattice[size//2, size//2])
         if step >= equilibration_steps and step % measurement_gap == 0:
             energies.append(
                 -j_param
@@ -136,9 +140,8 @@ def mcmc(lattice, beta, j_param, total_steps, size, measurement_gap):
         susceptibility,
         energies,
         magnetizations,
+        center_spin_trace,  # Return the trace for autocorrelation analysis
     )
-
-
 # pymc3
 def get_Energy(spins):
     """Calculates the energy of the spin lattice at a particular state
@@ -254,6 +257,7 @@ for beta in tqdm(beta_values):
         susceptibility,
         energy_list,
         mag_list,
+        center_spin_trace  # Add this variable to capture the new return value
     ) = mcmc(lattice, beta, j_param, num_steps, size, measurement_gap)
     magnetizations.append(avg_mag / (size**2))
     avg_energies.append(avg_energy / (size**2))
@@ -341,14 +345,30 @@ magnetizations_all_chains = []
 
 # Running multiple independent chains and storing only energy and magnetization data
 for chain in range(num_chains):
-    lattice = data(
-        size, initialization
-    )  # Initializing each chain with a different lattice
-    _, _, _, _, _, energies, magnetizations = mcmc(
+    lattice = data(size, initialization)
+    _, _, _, _, _, energies, magnetizations, center_spin_trace = mcmc(
         lattice, beta, j_param, num_steps, size, measurement_gap
     )
     energies_all_chains.append(energies)
     magnetizations_all_chains.append(magnetizations)
+    
+def autocorrelation(trace, lag=1):
+    n = len(trace)
+    mean = np.mean(trace)
+    var = np.var(trace)
+    cov = np.mean((trace[:n-lag] - mean) * (trace[lag:] - mean))
+    return cov / var
+    
+lags = range(1, 5000)  # Adjust the number of lags as necessary
+autocorrs = [autocorrelation(center_spin_trace, lag=lag) for lag in lags]
+
+plt.figure(figsize=(12, 6))
+plt.plot(lags, autocorrs, marker='o')
+plt.xlabel("Lag")
+plt.ylabel("Autocorrelation")
+plt.title("Autocorrelation of Center Spin at Different Lags")
+plt.grid(True)
+plt.show()
 
 
 # Gelman-Rubin Diagnostic Function
@@ -379,7 +399,7 @@ def gelman_rubin(data):
     r_hat = np.sqrt(var_plus / W)
     return r_hat
     
-burnin = int(0.10 * num_steps) 
+burnin = int(0.05 * num_steps) 
 energies_no_burnin = [chain[burnin:] for chain in energies_all_chains]
 magnetizations_no_burnin = [chain[burnin:] for chain in magnetizations_all_chains]
 
