@@ -3,7 +3,7 @@ A Markov Chain Monte Carlo simulation of the 2D Ising Model.
 
 This script will produce a variety of data, including energies, magnetizations, lattice states, and more.
 
-To run, simply install the package with "pip install ." and enter "run-chain" in the terminal
+To run, simply install the package with "pip install ." and enter "run-chain" in the terminal. The simulation will take around 8 minutes to run and an additional two and half minutes for multile-chain analysis/Gelman-Rubin statistics. 
 
 
 The tests directory holds valuable guidance as well, including example outputs and jupyter notebooks.
