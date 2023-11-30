@@ -378,11 +378,14 @@ def gelman_rubin(data):
     # Potential scale reduction factor
     r_hat = np.sqrt(var_plus / W)
     return r_hat
-
+    
+burnin = int(0.10 * num_steps) 
+energies_no_burnin = [chain[burnin:] for chain in energies_all_chains]
+magnetizations_no_burnin = [chain[burnin:] for chain in magnetizations_all_chains]
 
 # Apply Gelman-Rubin Diagnostic for Magnetization and Energy
-r_hat_magnetization = gelman_rubin(magnetizations_all_chains)
-r_hat_energy = gelman_rubin(energies_all_chains)
+r_hat_magnetization = gelman_rubin(magnetizations_no_burnin)
+r_hat_energy = gelman_rubin(energies_no_burnin)
 
 # Plotting the energy for each chain
 plt.figure(figsize=(12, 6))
